@@ -1,13 +1,18 @@
-name: Deploy ArcKern+ Site to GitHub Pages
+name: Bootstrap & Deploy ArcKern+ Site
 
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      generate_site_files:
+        description: "Generate index.html & release-notes template if missing"
+        type: boolean
+        default: true
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -16,16 +21,185 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Deploy Static Site
+  bootstrap_and_deploy:
+    name: Build Site & Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate ArcKern+ site files if requested
+        if: github.event_name == 'workflow_dispatch' && inputs.generate_site_files
+        run: |
+          cat << 'EOF' > index.html
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>ArcKern+ v1.0 | Galaxy A04 Kernel</title>
+            <style>
+              :root {
+                --bg: #0b0f17;
+                --panel: #131a26;
+                --panel-2: #192232;
+                --text: #eef4ff;
+                --muted: #93a4be;
+                --accent: #4ea8de;
+                --accent-2: #72efdd;
+                --border: #253247;
+              }
+              * { box-sizing: border-box; margin: 0; padding: 0; }
+              body {
+                font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+                background: radial-gradient(circle at top, rgba(78,168,222,0.16), transparent 40%), var(--bg);
+                color: var(--text);
+                line-height: 1.6;
+                padding: 40px 20px;
+              }
+              .wrap { max-width: 960px; margin: 0 auto; }
+              header {
+                text-align: center;
+                padding: 40px 20px 32px;
+                background: var(--panel);
+                border: 1px solid var(--border);
+                border-radius: 18px;
+                margin-bottom: 24px;
+              }
+              .pill {
+                display: inline-block;
+                padding: 5px 12px;
+                border-radius: 999px;
+                background: rgba(78,168,222,0.14);
+                color: var(--accent-2);
+                font-size: 0.85rem;
+                margin-bottom: 14px;
+              }
+              h1 { font-size: clamp(2.2rem, 6vw, 3.5rem); letter-spacing: -0.03em; }
+              .grad {
+                background: linear-gradient(90deg, var(--accent), var(--accent-2));
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+              }
+              .sub { color: var(--muted); max-width: 640px; margin: 12px auto 24px; }
+              .btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+              .btn {
+                padding: 11px 18px;
+                border-radius: 10px;
+                text-decoration: none;
+                font-weight: 600;
+                border: 1px solid var(--border);
+                color: var(--text);
+                background: var(--panel-2);
+              }
+              .btn.primary {
+                background: linear-gradient(90deg, var(--accent), var(--accent-2));
+                color: #07111a;
+                border: none;
+              }
+              .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+                gap: 16px;
+                margin-bottom: 24px;
+              }
+              .card {
+                background: var(--panel);
+                border: 1px solid var(--border);
+                border-radius: 16px;
+                padding: 22px;
+              }
+              .card h2 { font-size: 1.15rem; margin-bottom: 8px; }
+              .card p { color: var(--muted); font-size: 0.95rem; }
+              footer {
+                text-align: center;
+                color: var(--muted);
+                font-size: 0.9rem;
+                padding-top: 12px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="wrap">
+              <header>
+                <div class="pill">Samsung Galaxy A04 • SM-A045F / MT6765</div>
+                <h1>ArcKern<span class="grad">+</span> v1.0</h1>
+                <p class="sub">
+                  Custom Android kernel for Galaxy A04 featuring BakaSU &amp; Vanilla variants,
+                  Enforcing &amp; Permissive SELinux modes, ThinLTO, and balanced overclocking
+                  (CPU 2500/2000 MHz, GPU 900 MHz).
+                </p>
+                <div class="btns">
+                  <a class="btn primary" href="https://github.com/Halk56855/android_kernel_samsung_a045/releases/tag/v1.0" target="_blank" rel="noopener noreferrer">Download v1.0</a>
+                  <a class="btn" href="https://github.com/Halk56855/android_kernel_samsung_a045" target="_blank" rel="noopener noreferrer">Kernel Source</a>
+                  <a class="btn" href="https://github.com/Halk56855/AnyKernel3-a04" target="_blank" rel="noopener noreferrer">AnyKernel3</a>
+                </div>
+              </header>
+
+              <section class="grid">
+                <div class="card">
+                  <h2>Four Kernel Variants</h2>
+                  <p>BakaSU (Enforcing &amp; Permissive) and Vanilla (Enforcing &amp; Permissive) packaged via AnyKernel3.</p>
+                </div>
+                <div class="card">
+                  <h2>Performance &amp; Overclock</h2>
+                  <p>ThinLTO build optimization with balanced overclocking (CPU 2500/2000 MHz, GPU 900 MHz).</p>
+                </div>
+                <div class="card">
+                  <h2>Root &amp; Filesystem</h2>
+                  <p>BakaSU support, SUSFS &amp; NoMount integration, F2FS fixes, and fake uname support.</p>
+                </div>
+              </section>
+
+              <footer>
+                ArcKern+ v1.0 • Maintained by Halk56855
+              </footer>
+            </div>
+          </body>
+          </html>
+          EOF
+
+          mkdir -p docs
+          cat << 'EOF' > docs/v1.0-release-notes.md
+          ## ArcKern+ v1.0
+
+          First public release of ArcKern+ for the Samsung Galaxy A04 (SM-A045F / MT6765).
+
+          ### Builds
+          - Vanilla - Enforcing
+          - Vanilla - Permissive
+          - BakaSU - Enforcing
+          - BakaSU - Permissive
+
+          ### Features
+          - Balanced Overclock (CPU 2500/2000 MHz, GPU 900 MHz)
+          - ThinLTO build optimization
+          - BakaSU, SUSFS & NoMount support
+          - F2FS discard-thread fix & Fake uname
+          - Enforcing & Permissive SELinux variants
+
+          ### Installation
+          Flash the appropriate AnyKernel3 ZIP using a compatible custom recovery or Kernel Flasher.
+          EOF
+
+      - name: Commit generated files if changed
+        if: github.event_name == 'workflow_dispatch' && inputs.generate_site_files
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add index.html docs/v1.0-release-notes.md
+            git commit -m "chore: bootstrap ArcKern+ v1.0 site files"
+            git push
+          fi
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
